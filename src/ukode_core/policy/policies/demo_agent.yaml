@@ -1,0 +1,15 @@
+# Política do agente de demonstração usado na sessão As-Is.
+# default_mode: deny significa que só o que está listado abaixo é permitido —
+# qualquer ferramenta nova precisa ser declarada aqui antes de poder ser usada.
+agent_id: demo_agent
+default_mode: deny
+
+tools:
+  - tool: lookup_contact
+    mode: allow
+
+  - tool: send_whatsapp_message
+    mode: approval
+    approvers: ["ops@ukodelabs.com"]
+    reason: "Envio de WhatsApp para um cliente real exige aprovação humana."
+    max_calls_per_run: 3

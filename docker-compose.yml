@@ -1,0 +1,22 @@
+# Ambiente de desenvolvimento local: só o Postgres. A API e o worker rodam
+# fora do Docker durante o desenvolvimento (uvicorn --reload / python -m).
+# Para o deploy real na VPS, veja deploy/docker-compose.prod.yml.
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: ukode
+      POSTGRES_PASSWORD: ukode
+      POSTGRES_DB: ukode_core
+    ports:
+      - "5432:5432"
+    volumes:
+      - ukode_core_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ukode"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  ukode_core_pgdata:
