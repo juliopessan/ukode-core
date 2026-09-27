@@ -47,3 +47,37 @@ async def test_replay_answers_the_eight_canonical_questions(
     assert record["result_text"] == "Contato encontrado."
     assert record["audit_chain_valid"] is True
     assert record["cost_anomaly"] is False
+
+
+async def test_replay_counts_a_tool_executed_after_human_approval(
+    db_session, agents, policy_engine, mcp_gateway, whatsapp_connector
+):
+    """Achado em produção: uma chamada aprovada por humano é executada em
+    resume_run(), não em _process_pending_tool_calls() — se resources_accessed
+    olhasse só PolicyDecision.outcome == 'allow', a ferramenta some do
+    replay mesmo tendo sido de fato chamada com sucesso."""
+    llm = FakeLLMClient(
+        script=[
+            LLMResponse(
+                tool_calls=[
+                    ToolCallRequest(
+                        id="call_1",
+                        name="send_whatsapp_message",
+                        arguments={"to": "+5511999999999", "message": "Oi"},
+                    )
+                ],
+                usage=LLMUsage(50, 10),
+            ),
+            LLMResponse(text="Enviado.", usage=LLMUsage(20, 5)),
+        ]
+    )
+    engine = Engine(
+        db_session, agents, {"default": llm}, policy_engine, mcp_gateway
+    ).with_approval_notifier(ConsoleNotifier())
+
+    run = await engine.start_run("acme", "demo_agent", "Confirme a sessão")
+    run = await engine.resume_run(run.id, approved=True, decided_by="ops@ukodelabs.com")
+
+    record = build_execution_record(db_session, run, agents)
+
+    assert record["resources_accessed"] == ["send_whatsapp_message"]

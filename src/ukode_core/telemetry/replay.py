@@ -14,7 +14,7 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ukode_core.models import LedgerEntry, PolicyDecision, Run
+from ukode_core.models import AuditLogEntry, LedgerEntry, PolicyDecision, Run
 from ukode_core.orchestrator.agents import AgentDefinition
 from ukode_core.telemetry.audit import AuditLog
 
@@ -45,8 +45,18 @@ def build_execution_record(
         .order_by(PolicyDecision.created_at)
     ).scalars().all()
 
+    # "Recurso acessado" é o que de fato foi chamado com sucesso — não o que a
+    # política permitiu de cara. Uma chamada aprovada por um humano depois de
+    # pausar não gera uma nova PolicyDecision "allow"; quem registra a
+    # execução real, nos dois caminhos (direto ou pós-aprovação), é sempre
+    # o mesmo evento "tool_call" na auditoria.
+    tool_call_events = session.execute(
+        select(AuditLogEntry).where(
+            AuditLogEntry.run_id == run.id, AuditLogEntry.event_type == "tool_call"
+        )
+    ).scalars().all()
     resources_accessed = sorted(
-        {d.tool_name for d in decisions if d.outcome == "allow"}
+        {e.payload["tool"] for e in tool_call_events if e.payload.get("ok")}
     )
 
     return {
