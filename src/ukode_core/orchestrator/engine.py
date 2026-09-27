@@ -134,7 +134,7 @@ class Engine:
         llm = self._llm_clients.get(agent.model) or self._llm_clients["default"]
         tools = self._mcp.tools_for(agent.tool_names)
 
-        response = await llm.complete(run.messages, tools)
+        response = await llm.complete(run.messages, tools, system=agent.system_prompt)
         self._ledger.record(run.id, run.tenant_id, agent.agent_id, llm.model, response.usage)
         self._audit.append(
             run.id,

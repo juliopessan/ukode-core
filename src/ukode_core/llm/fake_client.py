@@ -14,11 +14,13 @@ class FakeLLMClient:
     def __init__(self, script: list[LLMResponse]):
         self._script = list(script)
         self.calls: list[list[dict[str, Any]]] = []
+        self.systems: list[str] = []
 
     async def complete(
-        self, messages: list[dict[str, Any]], tools: list[ToolSpec]
+        self, messages: list[dict[str, Any]], tools: list[ToolSpec], system: str = ""
     ) -> LLMResponse:
         self.calls.append(messages)
+        self.systems.append(system)
         if not self._script:
             return LLMResponse(text="(fim do roteiro)", usage=LLMUsage(10, 1))
         return self._script.pop(0)

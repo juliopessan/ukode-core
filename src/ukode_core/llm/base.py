@@ -39,5 +39,5 @@ class LLMClient(Protocol):
     model: str
 
     async def complete(
-        self, messages: list[dict[str, Any]], tools: list[ToolSpec]
+        self, messages: list[dict[str, Any]], tools: list[ToolSpec], system: str = ""
     ) -> LLMResponse: ...

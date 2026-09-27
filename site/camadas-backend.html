@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Backend — camadas do ukode-core</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Instrument+Serif:ital@1&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #f2efe8; --paper-deep: #e7e3da; --rule: #d6d2c8;
+  --ink: #11110f; --ink-soft: #55524b; --ink-faint: #8a867c;
+  --clay: #ed6738; --clay-deep: #c8481c; --mint: #4f9c6b;
+  --ledger-bg: #14140f; --ledger-ink: #efece4; --ledger-dim: #85817a; --ledger-rule: #2c2b25; --ledger-mint: #8fcfa6;
+  --display: "Archivo", Arial, sans-serif;
+  --voice: "Instrument Serif", Georgia, serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper-deep); font-family: var(--display); color: var(--ink); display: flex; justify-content: center; padding: 28px 12px; }
+.card {
+  width: 100%; max-width: 480px; background: var(--paper); border: 1px solid var(--rule);
+  padding: 34px 26px 30px; display: flex; flex-direction: column; gap: 22px;
+}
+.eyebrow { font-family: var(--mono); font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-faint);
+  display: flex; align-items: center; gap: 10px; }
+.eyebrow::before { content: ""; width: 26px; height: 1px; background: var(--ink-faint); }
+h1 { margin: 0; font-weight: 800; font-size: 27px; line-height: 1.08; letter-spacing: -0.03em; }
+h1 b { font-weight: 800; }
+.c-mint { color: var(--mint); } .c-clay { color: var(--clay-deep); }
+.sub { margin: 0; color: var(--ink-soft); font-size: 14px; line-height: 1.5; }
+
+.req { font-family: var(--mono); font-size: 12px; color: var(--ink-soft); border: 1px solid var(--rule); background: var(--paper-deep);
+  padding: 10px 13px; }
+.req b { color: var(--ink); font-weight: 500; }
+
+.stack { border: 1px solid var(--rule); padding: 18px 16px 20px; display: flex; flex-direction: column; align-items: center; gap: 0; position: relative; }
+.stack-label { align-self: flex-start; font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 12px; }
+
+.node { width: 100%; border: 1.5px solid var(--ink); padding: 14px 16px 15px; display: flex; flex-direction: column; gap: 9px; background: var(--paper); position: relative; z-index: 1; }
+.node h2 { margin: 0; font-size: 19px; font-weight: 800; letter-spacing: -0.01em; }
+.node .role { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+.chip { font-family: var(--mono); font-size: 10.5px; border: 1px solid var(--rule); padding: 3px 8px; color: var(--ink-soft); }
+
+.stem { width: 1.5px; height: 22px; background: var(--ink); }
+.pill-float { position: absolute; right: 14px; font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+  background: var(--mint); color: var(--paper); padding: 3px 9px; z-index: 2; }
+.p1 { top: 86px; }
+
+.flow { font-family: var(--mono); font-size: 12.5px; color: var(--ink-soft); text-align: center; }
+.flow b { color: var(--ink); }
+
+.bot { width: 34px; height: 34px; border: 1.5px solid var(--ink); border-radius: 50%; display: grid; place-items: center; margin: 4px 0; background: var(--paper); position: relative; z-index: 1; }
+.bot::after { content: ""; width: 8px; height: 8px; background: var(--ink); border-radius: 1px; }
+.branches { display: flex; justify-content: center; align-items: flex-start; gap: 10px; width: 100%; }
+.branch { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.branch-box { width: 100%; border: 1px solid var(--rule); padding: 9px 6px; text-align: center; font-family: var(--mono); font-size: 11.5px; color: var(--ink); background: var(--paper-deep); }
+.branch small { font-family: var(--mono); font-size: 9.5px; color: var(--mint); letter-spacing: .04em; }
+
+.confirm { width: 100%; border: 1.5px solid var(--mint); color: var(--ink); padding: 11px 14px; text-align: center; font-weight: 700; font-size: 14.5px; background: color-mix(in srgb, var(--mint) 10%, var(--paper)); position: relative; z-index: 1; }
+.tags { display: flex; justify-content: center; gap: 8px; margin-top: 10px; }
+.tag { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; padding: 3px 9px; border: 1px solid var(--rule); color: var(--ink-faint); }
+.tag.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+.observe { border: 1px solid var(--ledger-rule); background: var(--ledger-bg); color: var(--ledger-ink); padding: 16px 17px; display: flex; flex-direction: column; gap: 12px; }
+.observe-head { display: flex; align-items: center; gap: 9px; font-family: var(--mono); font-size: 12px; }
+.observe-head .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ledger-mint); }
+.pills { display: flex; gap: 8px; flex-wrap: wrap; }
+.pills span { font-family: var(--mono); font-size: 10.5px; border: 1px solid var(--ledger-rule); padding: 4px 10px; color: var(--ledger-dim); }
+.bars { display: flex; gap: 4px; }
+.bars i { flex: 1; height: 4px; background: var(--ledger-mint); opacity: .85; }
+
+.line { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; text-align: center; margin: 2px 0; }
+.line .voice { font-family: var(--voice); font-style: italic; font-weight: 400; }
+
+.attrib { border: 1px solid var(--rule); background: var(--paper-deep); padding: 10px 12px; display: flex; align-items: center; gap: 11px; }
+.attrib .mark { width: 30px; height: 30px; border: 1.5px solid var(--ink); display: grid; place-items: center; flex: none; }
+.attrib .mark::after { content: ""; width: 8px; height: 8px; background: var(--ink); }
+.attrib b { font-size: 14px; letter-spacing: -0.01em; }
+.attrib span { display: block; font-family: var(--mono); font-size: 10.5px; color: var(--ink-faint); }
+
+.check { border-top: 1px solid var(--rule); padding-top: 14px; display: flex; flex-direction: column; gap: 7px; }
+.check li { list-style: none; display: flex; align-items: baseline; gap: 9px; font-family: var(--mono); font-size: 12px; color: var(--ink-soft); }
+.check .ok { color: var(--mint); } .check .todo { color: var(--clay-deep); }
+.check ul { margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+
+.fi { animation: fi .6s var(--ease-out) both; }
+@keyframes fi { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+<div class="card" id="card">
+
+  <p class="eyebrow fi" style="animation-delay:.02s">Backend do ukode-core · camada 1 de 3</p>
+  <h1 class="fi" style="animation-delay:.08s">Orchestrator <span class="c-mint">vs</span> Policy Engine <span class="c-clay">vs</span> Audit &amp; Replay</h1>
+  <p class="sub fi" style="animation-delay:.14s">Três camadas, três responsabilidades diferentes. Sem framework de agente.</p>
+
+  <div class="req fi" style="animation-delay:.2s">Lead: <b>"confirme a sessão do lead@example.com"</b></div>
+
+  <div class="stack fi" style="animation-delay:.26s">
+    <span class="stack-label">O caminho de todo pedido</span>
+
+    <div class="node">
+      <h2>Orchestrator</h2>
+      <p class="role">monta o pedido</p>
+      <div class="chips"><span class="chip">modelo</span><span class="chip">prompt</span><span class="chip">ferramentas</span><span class="chip">histórico</span></div>
+    </div>
+    <div class="stem"></div>
+
+    <div class="node" style="position:relative">
+      <span class="pill-float p1">decisão gravada ✓</span>
+      <h2>Policy Engine</h2>
+      <p class="role">decide antes da ação</p>
+      <p class="flow"><b>permite</b> → <b>aprova</b> → <b>nega</b> → <b>registra</b></p>
+    </div>
+    <div class="stem"></div>
+
+    <div class="bot" aria-hidden="true"></div>
+    <div class="stem" style="height:14px"></div>
+
+    <div class="branches">
+      <div class="branch"><div class="branch-box">CRM</div><small>pronto ✓</small></div>
+      <div class="branch"><div class="branch-box">WhatsApp</div><small>pronto ✓</small></div>
+      <div class="branch"><div class="branch-box">MCP / ERP</div><small>pronto ✓</small></div>
+    </div>
+    <div class="stem"></div>
+
+    <div class="confirm">Ação registrada ✓</div>
+    <div class="tags"><span class="tag">demonstração</span><span class="tag on">produção</span></div>
+  </div>
+
+  <div class="observe fi" style="animation-delay:.32s">
+    <div class="observe-head"><span class="dot"></span> Audit &amp; Replay observa cada execução</div>
+    <div class="pills"><span>Registra</span><span>Audita</span><span>Custeia</span></div>
+    <div class="bars"><i></i><i></i><i></i><i style="opacity:.35"></i></div>
+  </div>
+
+  <p class="line fi" style="animation-delay:.38s">em <span class="voice">produção,</span></p>
+
+  <div class="attrib fi" style="animation-delay:.44s">
+    <span class="mark" aria-hidden="true"></span>
+    <div><b>ukode-core</b><span>github.com/juliopessan/ukode-core</span></div>
+  </div>
+
+  <ul class="check fi" style="animation-delay:.5s">
+    <li><span class="ok">✓</span> policy engine</li>
+    <li><span class="ok">✓</span> aprovação humana</li>
+    <li><span class="ok">✓</span> conectores mcp</li>
+    <li><span class="ok">✓</span> custo por execução</li>
+    <li><span class="ok">✓</span> auditoria encadeada</li>
+    <li><span class="todo">↻</span> agent builder <span style="color:var(--ink-faint)">— planejado</span></li>
+  </ul>
+
+</div>
+</body>
+</html>

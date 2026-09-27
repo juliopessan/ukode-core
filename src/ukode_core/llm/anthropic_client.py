@@ -16,7 +16,7 @@ class AnthropicClient:
         self._client = anthropic.AsyncAnthropic(api_key=api_key)
 
     async def complete(
-        self, messages: list[dict[str, Any]], tools: list[ToolSpec]
+        self, messages: list[dict[str, Any]], tools: list[ToolSpec], system: str = ""
     ) -> LLMResponse:
         anthropic_tools = [
             {
@@ -31,6 +31,7 @@ class AnthropicClient:
             max_tokens=self.max_tokens,
             messages=messages,
             tools=anthropic_tools or anthropic.NOT_GIVEN,
+            system=system or anthropic.NOT_GIVEN,
         )
 
         text = ""
