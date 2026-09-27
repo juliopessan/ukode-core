@@ -1,4 +1,10 @@
 agent_id: demo_agent
+owner: ops@ukodelabs.com
+status: active
+version: "1"
+description: >
+  Confirma sessões As-Is por WhatsApp após buscar o contato no CRM. Primeiro
+  agente da UKode Labs em produção — usado na própria captação de leads.
 model: claude-sonnet-5
 max_steps: 6
 tools:

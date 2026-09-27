@@ -20,7 +20,7 @@ from ukode_core.approvals.service import ApprovalService
 from ukode_core.ledger.service import LedgerService
 from ukode_core.llm.base import LLMClient, ToolCallRequest
 from ukode_core.mcp_gateway.registry import MCPGateway
-from ukode_core.models import Run, RunStatus
+from ukode_core.models import PolicyDecision, Run, RunStatus
 from ukode_core.orchestrator.agents import AgentDefinition
 from ukode_core.orchestrator.messages import (
     assistant_message,
@@ -53,6 +53,22 @@ class Engine:
     def with_approval_notifier(self, notifier) -> Engine:
         self._approvals = ApprovalService(self._session, notifier=notifier)
         return self
+
+    def _record_policy_decision(
+        self, run: Run, agent_id: str, call_dict: dict, outcome: str, reason: str
+    ) -> None:
+        self._session.add(
+            PolicyDecision(
+                run_id=run.id,
+                agent_id=agent_id,
+                tool_call_id=call_dict["id"],
+                tool_name=call_dict["name"],
+                tool_args=call_dict["arguments"],
+                outcome=outcome,
+                reason=reason,
+            )
+        )
+        self._session.flush()
 
     # -- ciclo de vida -----------------------------------------------------
 
@@ -132,7 +148,14 @@ class Engine:
         if not response.tool_calls:
             run.status = RunStatus.DONE
             run.result_text = response.text
-            self._audit.append(run.id, "run_finished", {"text": response.text})
+            anomaly, reason = self._ledger.detect_cost_anomaly(
+                run.id, run.tenant_id, agent.agent_id
+            )
+            run.cost_anomaly = anomaly
+            run.cost_anomaly_reason = reason
+            self._audit.append(
+                run.id, "run_finished", {"text": response.text, "cost_anomaly": anomaly}
+            )
             self._session.flush()
             return run
 
@@ -157,6 +180,7 @@ class Engine:
             )
 
             if decision.deny:
+                self._record_policy_decision(run, agent.agent_id, call_dict, "deny", decision.reason)
                 self._audit.append(
                     run.id,
                     "tool_call_denied",
@@ -171,6 +195,9 @@ class Engine:
                 continue
 
             if decision.needs_approval:
+                self._record_policy_decision(
+                    run, agent.agent_id, call_dict, "approval", decision.reason
+                )
                 run.status = RunStatus.AWAITING_APPROVAL
                 self._session.flush()
                 await self._approvals.request(
@@ -182,6 +209,7 @@ class Engine:
                 self._session.flush()
                 return run  # pausa aqui; retoma via resume_run()
 
+            self._record_policy_decision(run, agent.agent_id, call_dict, "allow", "")
             result = await self._mcp.call(tool_name, tool_args)
             self._audit.append(
                 run.id, "tool_call", {"tool": tool_name, "args": tool_args, "ok": result.ok}

@@ -62,6 +62,22 @@ src/ukode_core/
 └── telemetry/      # OpenTelemetry + auditoria append-only encadeada por hash
 ```
 
+## Governança que responde perguntas, não só grava logs
+
+- **Registro de agentes** (`GET /agents`) — todo agente declara dono, status,
+  versão e descrição no YAML. O endpoint soma isso a fatos ao vivo: quantos
+  runs, quando foi o último, quanto já custou, em quais tenants roda. Nenhum
+  agente sem dono.
+- **Replay de execução** (`GET /runs/{id}/replay`) — responde, para qualquer
+  run: qual agente, quem é o dono, qual versão, qual modelo, qual prompt,
+  quais políticas foram aplicadas, quais recursos foram acessados, quanto
+  custou, e se a trilha de auditoria continua íntegra.
+- **Decisões de política persistidas** — cada avaliação (permitir, negar,
+  pedir aprovação) vira uma linha em `policy_decisions`, consultável direto.
+- **Custo anômalo** — ao terminar, o run é comparado com a média das últimas
+  execuções do mesmo agente e tenant; se custou 3x ou mais, fica marcado com
+  o motivo. Sem histórico mínimo (5 runs), não opina.
+
 ## Rodando localmente
 
 ```bash

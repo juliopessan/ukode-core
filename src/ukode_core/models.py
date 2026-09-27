@@ -54,6 +54,10 @@ class Run(Base):
     pending_tool_calls: Mapped[list] = mapped_column(JSON, default=list)
     pending_tool_results: Mapped[list] = mapped_column(JSON, default=list)
     tool_call_counts: Mapped[dict] = mapped_column(JSON, default=dict)
+    # FinOps: marcado quando o custo total do run destoa do histórico do
+    # mesmo agente — "a execução que pareceu normal e custou mais".
+    cost_anomaly: Mapped[bool] = mapped_column(default=False)
+    cost_anomaly_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=_now, onupdate=_now)
 
@@ -61,6 +65,9 @@ class Run(Base):
     ledger_entries: Mapped[list[LedgerEntry]] = relationship(back_populates="run")
     audit_entries: Mapped[list[AuditLogEntry]] = relationship(
         back_populates="run", order_by="AuditLogEntry.seq"
+    )
+    policy_decisions: Mapped[list[PolicyDecision]] = relationship(
+        back_populates="run", order_by="PolicyDecision.created_at"
     )
 
 
@@ -117,6 +124,26 @@ class AuditLogEntry(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
 
     run: Mapped[Run] = relationship(back_populates="audit_entries")
+
+
+class PolicyDecision(Base):
+    """Um registro por avaliação de política — não um evento de log solto,
+    mas uma linha consultável: 'quais políticas foram aplicadas nesse run?'
+    é uma query direta nesta tabela, não uma busca em JSON de auditoria."""
+
+    __tablename__ = "policy_decisions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    run_id: Mapped[str] = mapped_column(ForeignKey("runs.id"), index=True)
+    agent_id: Mapped[str] = mapped_column(String(120), index=True)
+    tool_call_id: Mapped[str] = mapped_column(String(120))
+    tool_name: Mapped[str] = mapped_column(String(120))
+    tool_args: Mapped[dict] = mapped_column(JSON, default=dict)
+    outcome: Mapped[str] = mapped_column(String(20))  # allow | deny | approval
+    reason: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+
+    run: Mapped[Run] = relationship(back_populates="policy_decisions")
 
 
 class BudgetLimit(Base):
