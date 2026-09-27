@@ -60,6 +60,13 @@ src/ukode_core/
 ├── approvals/      # pedidos de aprovação + canais de notificação
 ├── ledger/         # preço por modelo, uso, orçamento por tenant/agente
 └── telemetry/      # OpenTelemetry + auditoria append-only encadeada por hash
+
+site/               # landing da UKode Labs + peças de arquitetura + viewer ao vivo
+├── index.html
+├── camadas-backend.html    # Orchestrator vs Policy Engine vs Audit & Replay
+├── camadas-frontend.html   # por que não há builder visual nem dashboard
+├── camadas-infra.html      # Traefik + Postgres reaproveitados, api/worker novos
+└── live.html               # acompanha um run real, em tempo real, no navegador
 ```
 
 ## Governança que responde perguntas, não só grava logs
@@ -77,6 +84,27 @@ src/ukode_core/
 - **Custo anômalo** — ao terminar, o run é comparado com a média das últimas
   execuções do mesmo agente e tenant; se custou 3x ou mais, fica marcado com
   o motivo. Sem histórico mínimo (5 runs), não opina.
+
+## Demonstração ao vivo
+
+O projeto está publicado na VPS do lab, com Postgres dedicado, HTTPS e o
+modelo real da Anthropic — nada roteirizado:
+
+- **Landing:** https://ukodelabs.srv1774174.hstgr.cloud
+- **API:** https://ukode-core.srv1774174.hstgr.cloud
+- **Acompanhar um run em tempo real:** https://ukodelabs.srv1774174.hstgr.cloud/live.html
+  — clica em "rodar demonstração" e vê o agente decidir, pedir aprovação e ser
+  auditado ao vivo, sondando `GET /runs/{id}/replay` a cada 900ms.
+
+A API não tem UI própria por decisão (ver `camadas-frontend.html`), então o
+CORS vem liberado (`allow_origins=["*"]`) em `api/app.py` — sem isso nenhuma
+página estática consegue chamá-la do navegador. Um tenant real trocaria isso
+por uma lista explícita de origens.
+
+Deploy de referência em [deploy/docker-compose.prod.yml](deploy/docker-compose.prod.yml):
+reaproveita o Traefik (que roda em `network_mode: host` no lab, então não
+precisa de rede externa nenhuma) e um Postgres compartilhado, com role e
+banco dedicados para este projeto — nunca a credencial de admin do Postgres.
 
 ## Rodando localmente
 
