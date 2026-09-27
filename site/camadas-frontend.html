@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frontend — camadas do ukode-core</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Instrument+Serif:ital@1&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/camadas.css">
+</head>
+<body>
+<div class="card" id="card">
+
+  <p class="eyebrow fi" style="animation-delay:.02s">Frontend do ukode-core · camada 2 de 3</p>
+  <h1 class="fi" style="animation-delay:.08s">Sem <span class="c-clay">canvas</span>. Sem <span class="c-clay">login</span>. Só <span class="c-mint">API</span>.</h1>
+  <p class="sub fi" style="animation-delay:.14s">Não é uma lacuna — é decisão. Uma tela para manter é uma tela para vender depois.</p>
+
+  <div class="req fi" style="animation-delay:.2s">GET /agents → <b>JSON</b> — sem HTML, sem tela</div>
+
+  <div class="stack fi" style="animation-delay:.26s">
+    <span class="stack-label">A única superfície que existe</span>
+
+    <div class="node">
+      <h2>API REST</h2>
+      <p class="role">é a interface inteira</p>
+      <div class="chips"><span class="chip">FastAPI</span><span class="chip">JSON</span><span class="chip">OpenAPI automático</span></div>
+    </div>
+    <div class="stem"></div>
+
+    <div class="node" style="position:relative">
+      <span class="pill-float p1">zero tela pra manter ✓</span>
+      <h2>Quem consome</h2>
+      <p class="role">o cliente já tem uma tela</p>
+      <p class="flow"><b>Copilot Studio</b> → <b>Retool</b> → <b>curl</b> → <b>seu BI</b></p>
+    </div>
+    <div class="stem"></div>
+
+    <div class="bot" aria-hidden="true"></div>
+    <div class="stem" style="height:14px"></div>
+
+    <div class="branches">
+      <div class="branch"><div class="branch-box">/agents</div><small>pronto ✓</small></div>
+      <div class="branch"><div class="branch-box">/runs</div><small>pronto ✓</small></div>
+      <div class="branch"><div class="branch-box">/runs/{id}/replay</div><small>pronto ✓</small></div>
+    </div>
+    <div class="stem"></div>
+
+    <div class="confirm">Nenhuma tela para autenticar, hospedar ou versionar</div>
+  </div>
+
+  <div class="observe fi" style="animation-delay:.32s">
+    <div class="observe-head"><span class="dot"></span> Por que não construir um builder visual</div>
+    <div class="pills"><span>menos manutenção</span><span>sem vendor lock-in</span><span>foco no motor</span></div>
+  </div>
+
+  <p class="line fi" style="animation-delay:.38s">menos tela, <span class="voice">mais controle.</span></p>
+
+  <div class="attrib fi" style="animation-delay:.44s">
+    <span class="mark" aria-hidden="true"></span>
+    <div><b>ukode-core</b><span>github.com/juliopessan/ukode-core</span></div>
+  </div>
+
+  <ul class="check fi" style="animation-delay:.5s">
+    <li><span class="ok">✓</span> API REST completa (agents, runs, approvals, replay)</li>
+    <li><span class="ok">✓</span> documentação OpenAPI gerada automaticamente</li>
+    <li><span class="todo">↻</span> dashboard próprio <span style="color:var(--ink-faint)">— não planejado, decisão</span></li>
+    <li><span class="todo">↻</span> canvas de agentes <span style="color:var(--ink-faint)">— isso é o Tessera</span></li>
+  </ul>
+
+</div>
+</body>
+</html>

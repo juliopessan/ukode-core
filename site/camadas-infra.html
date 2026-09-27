@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Infraestrutura — camadas do ukode-core</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Instrument+Serif:ital@1&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/camadas.css">
+</head>
+<body>
+<div class="card" id="card">
+
+  <p class="eyebrow fi" style="animation-delay:.02s">Infraestrutura do ukode-core · camada 3 de 3</p>
+  <h1 class="fi" style="animation-delay:.08s">Traefik <span class="c-mint">vs</span> API <span class="c-mint">vs</span> Worker</h1>
+  <p class="sub fi" style="animation-delay:.14s">No mesmo host que já roda o resto da operação. Nada duplicado.</p>
+
+  <div class="req fi" style="animation-delay:.2s">docker compose -f <b>deploy/docker-compose.prod.yml</b> up -d</div>
+
+  <div class="stack fi" style="animation-delay:.26s">
+    <span class="stack-label">O que sobe, e o que já existia</span>
+
+    <div class="node">
+      <h2>Traefik</h2>
+      <p class="role">recebe e roteia — já rodando na VPS</p>
+      <div class="chips"><span class="chip">TLS automático</span><span class="chip">Let's Encrypt</span><span class="chip">Host()</span></div>
+    </div>
+    <div class="stem"></div>
+
+    <div class="node" style="position:relative">
+      <span class="pill-float p1">2 containers novos ✓</span>
+      <h2>API + Worker</h2>
+      <p class="role">criam e processam o run</p>
+      <p class="flow"><b>valida</b> → <b>persiste</b> → <b>responde</b> → <b>fila</b></p>
+    </div>
+    <div class="stem"></div>
+
+    <div class="bot" aria-hidden="true"></div>
+    <div class="stem" style="height:14px"></div>
+
+    <div class="branches">
+      <div class="branch"><div class="branch-box">Postgres</div><small>reaproveitado</small></div>
+      <div class="branch"><div class="branch-box">Anthropic API</div><small>externo</small></div>
+      <div class="branch"><div class="branch-box">Docker network</div><small>isolado</small></div>
+    </div>
+    <div class="stem"></div>
+
+    <div class="confirm">~300 MB para api + worker juntos</div>
+  </div>
+
+  <div class="observe fi" style="animation-delay:.32s">
+    <div class="observe-head"><span class="dot"></span> Recursos livres na VPS do lab</div>
+    <div class="pills"><span>2 vCPU</span><span>8 GB RAM</span><span>66 GB disco</span></div>
+    <div class="bars"><i style="opacity:.3"></i><i style="opacity:1"></i><i style="opacity:1"></i><i style="opacity:1"></i></div>
+  </div>
+
+  <p class="line fi" style="animation-delay:.38s">no mesmo host, <span class="voice">sem duplicar nada.</span></p>
+
+  <div class="attrib fi" style="animation-delay:.44s">
+    <span class="mark" aria-hidden="true"></span>
+    <div><b>ukode-core</b><span>deploy/docker-compose.prod.yml</span></div>
+  </div>
+
+  <ul class="check fi" style="animation-delay:.5s">
+    <li><span class="ok">✓</span> Dockerfile multi-stage (api + worker)</li>
+    <li><span class="ok">✓</span> testado localmente — 27/27</li>
+    <li><span class="ok">✓</span> receita de deploy reaproveitando Traefik e Postgres</li>
+    <li><span class="todo">↻</span> subir na VPS <span style="color:var(--ink-faint)">— planejado, ainda não feito</span></li>
+  </ul>
+
+</div>
+</body>
+</html>
