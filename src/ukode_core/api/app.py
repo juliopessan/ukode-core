@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from ukode_core.api.routes import agents, approvals, health, runs
 from ukode_core.config import settings
@@ -13,6 +14,17 @@ def create_app() -> FastAPI:
         title="ukode-core",
         description="Camada de orquestração de agentes de IA da UKode Labs.",
         version="0.1.0",
+    )
+
+    # Sem UI própria (ver camada de frontend): quem consome esta API é sempre
+    # uma origem diferente — a landing, um painel do cliente, um curl. CORS
+    # aberto é aceitável aqui porque não há sessão nem cookie envolvido; um
+    # tenant real trocaria isto por uma lista explícita de origens.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
 
     @app.on_event("startup")

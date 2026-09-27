@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demonstração ao vivo — ukode-core</title>
+<meta name="description" content="Acompanhe um agente real decidindo, pedindo aprovação e sendo auditado, em tempo real.">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Instrument+Serif:ital@1&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #f2efe8; --paper-deep: #e7e3da; --rule: #d6d2c8;
+  --ink: #11110f; --ink-soft: #55524b; --ink-faint: #8a867c;
+  --clay: #ed6738; --clay-deep: #c8481c; --mint: #4f9c6b;
+  --ledger-bg: #14140f; --ledger-ink: #efece4; --ledger-dim: #85817a; --ledger-rule: #2c2b25; --ledger-mint: #8fcfa6;
+  --display: "Archivo", Arial, sans-serif;
+  --voice: "Instrument Serif", Georgia, serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #12120e; --paper-deep: #1b1b16; --rule: #2e2d27;
+    --ink: #f0ede5; --ink-soft: #a8a49b; --ink-faint: #75726a;
+    --clay: #f57d51; --clay-deep: #ff9a71; --mint: #7fc79a;
+    --ledger-bg: #0b0b08; --ledger-rule: #232219; color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper-deep); font-family: var(--display); color: var(--ink); display: flex; justify-content: center; padding: 28px 12px; }
+.wrap { width: 100%; max-width: 640px; display: flex; flex-direction: column; gap: 22px; }
+.card { background: var(--paper); border: 1px solid var(--rule); padding: 30px 26px; display: flex; flex-direction: column; gap: 18px; }
+.eyebrow { font-family: var(--mono); font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-faint);
+  display: flex; align-items: center; gap: 10px; }
+.eyebrow::before { content: ""; width: 26px; height: 1px; background: var(--ink-faint); }
+h1 { margin: 0; font-weight: 800; font-size: 26px; line-height: 1.1; letter-spacing: -0.03em; }
+.sub { margin: 0; color: var(--ink-soft); font-size: 14px; line-height: 1.55; }
+
+.controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.btn { font-family: var(--display); font-weight: 700; font-size: 14.5px; padding: 12px 20px; border: 1px solid var(--ink); cursor: pointer; background: var(--ink); color: var(--paper); }
+.btn:disabled { opacity: .4; cursor: default; }
+.btn:not(:disabled):hover { background: transparent; color: var(--ink); }
+.btn-line { background: transparent; color: var(--ink); }
+.btn-line:not(:disabled):hover { background: var(--ink); color: var(--paper); }
+.btn-clay { border-color: var(--clay-deep); color: var(--clay-deep); background: transparent; }
+.btn-clay:not(:disabled):hover { background: var(--clay-deep); color: var(--paper); }
+
+.status-row { display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 12px; color: var(--ink-faint); }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-faint); flex: none; }
+.status-dot.running { background: var(--clay); animation: pulse 1.1s ease-in-out infinite; }
+.status-dot.waiting { background: var(--clay-deep); animation: pulse 1.1s ease-in-out infinite; }
+.status-dot.done { background: var(--mint); }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+.status-label { color: var(--ink); font-weight: 500; }
+
+.console { background: var(--ledger-bg); color: var(--ledger-ink); padding: 18px 20px; font-family: var(--mono); font-size: 12.5px;
+  line-height: 1.9; min-height: 120px; font-variant-numeric: tabular-nums; }
+.console-head { display: flex; justify-content: space-between; gap: 12px; color: var(--ledger-dim); font-size: 10.5px;
+  letter-spacing: .14em; text-transform: uppercase; padding-bottom: 10px; margin-bottom: 8px; border-bottom: 1px solid var(--ledger-rule); }
+.c-line { display: flex; gap: 12px; animation: fi .4s var(--ease-out) both; flex-wrap: wrap; }
+.c-line .t { color: var(--ledger-dim); flex: none; width: 8ch; }
+.c-line .k { color: var(--ledger-dim); flex: none; }
+.c-line .allow { color: var(--ledger-mint); }
+.c-line .approval { color: var(--clay); }
+.c-line .deny { color: var(--clay); }
+.c-empty { color: var(--ledger-dim); font-style: italic; }
+@keyframes fi { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+.approval-box { border: 1.5px solid var(--clay-deep); background: color-mix(in srgb, var(--clay) 9%, var(--paper)); padding: 16px 18px; display: none; flex-direction: column; gap: 12px; }
+.approval-box.show { display: flex; }
+.approval-box .k { font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--clay-deep); }
+.approval-box p { margin: 0; font-size: 14px; line-height: 1.5; }
+.approval-box code { font-family: var(--mono); font-size: 12.5px; }
+.approval-actions { display: flex; gap: 10px; }
+
+.result-box { border: 1.5px solid var(--mint); background: color-mix(in srgb, var(--mint) 10%, var(--paper)); padding: 16px 18px; display: none; flex-direction: column; gap: 8px; }
+.result-box.show { display: flex; }
+.result-box .k { font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--mint); }
+.result-box p { margin: 0; font-size: 15px; font-weight: 500; }
+
+.ledger { background: var(--ledger-bg); color: var(--ledger-ink); padding: 22px 24px; display: none; flex-direction: column; gap: 16px; }
+.ledger.show { display: flex; }
+.ledger-head { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+.ledger-head .live { display: flex; align-items: center; gap: 8px; }
+.ledger-head .live::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--ledger-mint); }
+.qa { display: flex; flex-direction: column; gap: 10px; padding-top: 14px; border-top: 1px solid var(--ledger-rule); }
+.qa-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; font-size: 13px; align-items: baseline; }
+.qa-row .q { color: var(--ledger-dim); }
+.qa-row .a { font-family: var(--mono); font-size: 12.5px; text-align: right; word-break: break-word; }
+.qa-row .a.valid { color: var(--ledger-mint); }
+
+.back { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="card">
+    <p class="eyebrow">Demonstração ao vivo · ukode-core</p>
+    <h1>Veja o agente decidir, em tempo real.</h1>
+    <p class="sub">Um pedido de verdade, para o modelo de verdade rodando na VPS. Sem roteiro: o que aparece abaixo é exatamente o que a API está fazendo agora.</p>
+
+    <div class="controls">
+      <button class="btn" id="runBtn">Rodar demonstração</button>
+      <div class="status-row">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusLabel">parado</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="console">
+      <div class="console-head"><span>run · demo_agent</span><span id="runIdLabel">—</span></div>
+      <div id="consoleBody"><div class="c-empty">clique em "rodar demonstração" para começar</div></div>
+    </div>
+
+    <div class="approval-box" id="approvalBox">
+      <span class="k">Aprovação pendente</span>
+      <p id="approvalText"></p>
+      <div class="approval-actions">
+        <button class="btn btn-clay" id="denyBtn">Negar</button>
+        <button class="btn" id="approveBtn">Aprovar como ops@ukodelabs.com</button>
+      </div>
+    </div>
+
+    <div class="result-box" id="resultBox">
+      <span class="k">Resultado</span>
+      <p id="resultText"></p>
+    </div>
+  </div>
+
+  <div class="ledger" id="ledgerBox">
+    <div class="ledger-head"><span class="live">replay · 8 perguntas</span><span id="ledgerCost">$0.000000</span></div>
+    <div class="qa" id="qaList"></div>
+  </div>
+
+  <a class="back" href="index.html">← voltar para a landing</a>
+</div>
+
+<script>
+(function () {
+  const API = "https://ukode-core.srv1774174.hstgr.cloud";
+  const runBtn = document.getElementById("runBtn");
+  const statusDot = document.getElementById("statusDot");
+  const statusLabel = document.getElementById("statusLabel");
+  const runIdLabel = document.getElementById("runIdLabel");
+  const consoleBody = document.getElementById("consoleBody");
+  const approvalBox = document.getElementById("approvalBox");
+  const approvalText = document.getElementById("approvalText");
+  const approveBtn = document.getElementById("approveBtn");
+  const denyBtn = document.getElementById("denyBtn");
+  const resultBox = document.getElementById("resultBox");
+  const resultText = document.getElementById("resultText");
+  const ledgerBox = document.getElementById("ledgerBox");
+  const ledgerCost = document.getElementById("ledgerCost");
+  const qaList = document.getElementById("qaList");
+
+  let runId = null, pollTimer = null, printedDecisions = 0, awaitingDecided = false;
+
+  function setStatus(state, label) {
+    statusDot.className = "status-dot " + state;
+    statusLabel.textContent = label;
+  }
+
+  function line(html) {
+    const t = new Date().toLocaleTimeString("pt-BR", { hour12: false });
+    const div = document.createElement("div");
+    div.className = "c-line";
+    div.innerHTML = `<span class="t">${t}</span>${html}`;
+    consoleBody.appendChild(div);
+    consoleBody.scrollTop = consoleBody.scrollHeight;
+  }
+
+  function clearConsole() {
+    consoleBody.innerHTML = "";
+  }
+
+  async function startRun() {
+    runBtn.disabled = true;
+    clearConsole();
+    printedDecisions = 0;
+    awaitingDecided = false;
+    approvalBox.classList.remove("show");
+    resultBox.classList.remove("show");
+    ledgerBox.classList.remove("show");
+    setStatus("running", "criando o run…");
+    line(`<span class="k">pedido</span> <span>"Confirme a sessão do lead@example.com"</span>`);
+
+    try {
+      const resp = await fetch(`${API}/runs`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          tenant_id: "demo-ao-vivo",
+          agent_id: "demo_agent",
+          message: "Confirme a sessão do lead@example.com",
+        }),
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const run = await resp.json();
+      runId = run.id;
+      runIdLabel.textContent = runId.slice(0, 8);
+      poll();
+    } catch (err) {
+      setStatus("waiting", "erro");
+      line(`<span class="k deny">erro</span> <span>${err.message} — a API está no ar?</span>`);
+      runBtn.disabled = false;
+    }
+  }
+
+  async function poll() {
+    clearTimeout(pollTimer);
+    try {
+      const resp = await fetch(`${API}/runs/${runId}/replay`);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const record = await resp.json();
+      render(record);
+
+      if (record.status === "awaiting_approval") {
+        setStatus("waiting", "aguardando aprovação humana");
+        if (!awaitingDecided) showApproval(record);
+      } else if (record.status === "done") {
+        setStatus("done", "concluído");
+        showResult(record);
+        runBtn.disabled = false;
+        return; // para de sondar
+      } else if (record.status === "failed" || record.status === "denied") {
+        setStatus("done", record.status);
+        runBtn.disabled = false;
+        return;
+      } else {
+        setStatus("running", "processando…");
+      }
+    } catch (err) {
+      line(`<span class="k deny">erro ao consultar</span> <span>${err.message}</span>`);
+    }
+    pollTimer = setTimeout(poll, 900);
+  }
+
+  function render(record) {
+    const decisions = record.policies_applied || [];
+    for (let i = printedDecisions; i < decisions.length; i++) {
+      const d = decisions[i];
+      const cls = d.outcome === "allow" ? "allow" : d.outcome === "approval" ? "approval" : "deny";
+      const verb = d.outcome === "allow" ? "permitido" : d.outcome === "approval" ? "precisa de aprovação" : "negado";
+      line(`<span class="k ${cls}">política</span> <span><b>${d.tool_name}</b> — ${verb}</span>`);
+    }
+    printedDecisions = decisions.length;
+
+    if (record.cost_usd) ledgerCost.textContent = "$" + record.cost_usd.toFixed(6);
+  }
+
+  function showApproval(record) {
+    const last = record.policies_applied[record.policies_applied.length - 1];
+    approvalText.innerHTML = `<b>${last.tool_name}</b> — ${last.reason}`;
+    approvalBox.classList.add("show");
+  }
+
+  async function decide(approved) {
+    awaitingDecided = true;
+    approvalBox.classList.remove("show");
+    line(`<span class="k">humano</span> <span>${approved ? "aprovou" : "negou"} — ops@ukodelabs.com</span>`);
+    try {
+      await fetch(`${API}/runs/${runId}/approval`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ approved, decided_by: "ops@ukodelabs.com" }),
+      });
+    } catch (err) {
+      line(`<span class="k deny">erro ao decidir</span> <span>${err.message}</span>`);
+    }
+    poll();
+  }
+
+  approveBtn.addEventListener("click", () => decide(true));
+  denyBtn.addEventListener("click", () => decide(false));
+
+  function showResult(record) {
+    resultText.textContent = record.result_text || "(sem texto final)";
+    resultBox.classList.add("show");
+    line(`<span class="k allow">concluído</span> <span>${record.resources_accessed.length} recurso(s) acessado(s) · $${record.cost_usd.toFixed(6)}</span>`);
+    fillLedger(record);
+  }
+
+  function fillLedger(record) {
+    qaList.innerHTML = "";
+    const rows = [
+      ["Qual agente executou?", record.agent_id],
+      ["Quem é o dono?", record.agent_owner],
+      ["Qual versão?", record.agent_version],
+      ["Qual modelo?", record.model],
+      ["Quais políticas foram aplicadas?", record.policies_applied.length + " decisão(ões)"],
+      ["Quais recursos foram acessados?", record.resources_accessed.join(", ") || "nenhum"],
+      ["Quanto custou?", "$" + record.cost_usd.toFixed(6)],
+      ["Auditoria íntegra?", record.audit_chain_valid ? "sim, verificada" : "não"],
+    ];
+    rows.forEach(([q, a], i) => {
+      const div = document.createElement("div");
+      div.className = "qa-row";
+      const validClass = (i === rows.length - 1 && record.audit_chain_valid) ? " valid" : "";
+      div.innerHTML = `<span class="q">${q}</span><span class="a${validClass}">${a}</span>`;
+      qaList.appendChild(div);
+    });
+    ledgerBox.classList.add("show");
+  }
+
+  runBtn.addEventListener("click", startRun);
+  setStatus("", "parado");
+})();
+</script>
+</body>
+</html>
