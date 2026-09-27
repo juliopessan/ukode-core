@@ -1,0 +1,18 @@
+# Landing da UKode Labs, servida por nginx atrás do Traefik da VPS.
+# O Traefik roda em rede host e emite o certificado via HTTP challenge
+# (resolver "letsencrypt") assim que o DNS do domínio apontar para a VPS.
+services:
+  site:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    volumes:
+      - ./html:/usr/share/nginx/html:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ukodelabs.rule=Host(`ukodelabs.com.br`) || Host(`www.ukodelabs.com.br`)"
+      - "traefik.http.routers.ukodelabs.entrypoints=websecure"
+      - "traefik.http.routers.ukodelabs.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.ukodelabs-preview.rule=Host(`ukodelabs.srv1774174.hstgr.cloud`)"
+      - "traefik.http.routers.ukodelabs-preview.entrypoints=websecure"
+      - "traefik.http.routers.ukodelabs-preview.tls.certresolver=letsencrypt"
+      - "traefik.http.services.ukodelabs.loadbalancer.server.port=80"
