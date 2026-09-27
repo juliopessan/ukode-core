@@ -1,14 +1,20 @@
 # Deploy de referência na VPS do lab (ou em qualquer host com Traefik e
-# Postgres já rodando). Reaproveita a rede do Traefik existente em vez de
-# duplicar proxy reverso e certificado — mesmo padrão usado no deploy do
-# OmniData (ver docs/deploy-vps.md daquele repositório).
+# Postgres já rodando). Reaproveita o Traefik existente em vez de duplicar
+# proxy reverso e certificado — mesmo padrão usado no deploy do OmniData.
 #
 # Uso:
 #   docker compose -f deploy/docker-compose.prod.yml --env-file .env up -d --build
 #
-# Pré-requisitos no host: uma rede externa do Traefik (ajuste o nome abaixo)
-# e um Postgres acessível via DATABASE_URL — pode ser o Postgres compartilhado
-# do lab, com um banco/role dedicado para este projeto.
+# Pré-requisitos no host:
+# - Traefik já rodando. Se ele estiver em `network_mode: host` (como no lab),
+#   NÃO é preciso nenhuma rede externa aqui — o Traefik alcança qualquer
+#   container pela rede de bridge dele. Se o seu Traefik for containerizado
+#   numa rede própria, anexe os serviços abaixo a essa rede em vez de
+#   deixá-los na rede padrão do compose.
+# - Um Postgres acessível via DATABASE_URL, com um banco/role dedicado para
+#   este projeto (nunca reaproveite a role admin do Postgres compartilhado).
+#   Se o Postgres for outro container Docker, os serviços abaixo precisam
+#   estar na mesma rede que ele — ajuste `networks:` conforme o seu caso.
 
 services:
   api:
@@ -24,7 +30,8 @@ services:
       APPROVAL_WEBHOOK_URL: ${APPROVAL_WEBHOOK_URL}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
     networks:
-      - traefik
+      - default
+      - postgres
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.ukode-core-api.rule=Host(`${API_DOMAIN}`)"
@@ -43,8 +50,14 @@ services:
       APPROVAL_WEBHOOK_URL: ${APPROVAL_WEBHOOK_URL}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
     networks:
-      - traefik
+      - default
+      - postgres
 
 networks:
-  traefik:
+  default: {}
+  # Nome real da rede do Postgres compartilhado no lab. Ajuste se o seu
+  # Postgres estiver em outra rede, ou remova esta rede e o bloco `postgres`
+  # dos serviços acima se o Postgres for acessível diretamente (RDS, etc).
+  postgres:
+    name: postgresql-ky8x_default
     external: true
