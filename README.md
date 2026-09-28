@@ -84,6 +84,14 @@ site/               # landing da UKode Labs + peças de arquitetura + viewer ao 
 - **Custo anômalo** — ao terminar, o run é comparado com a média das últimas
   execuções do mesmo agente e tenant; se custou 3x ou mais, fica marcado com
   o motivo. Sem histórico mínimo (5 runs), não opina.
+- **Avaliador independente** (`POST /agents/{id}/findings`) — papel separado
+  de quem opera (`owner`) e de quem aprova (`Approval`). Um avaliador
+  declarado em `evaluators:` no YAML do agente pode registrar um achado sobre
+  um run específico ou sobre um padrão observado no agente como um todo —
+  nunca bloqueia nada, só fica registrado e visível
+  (`GET /agents/{id}/findings`). Quem não está na lista recebe 403. Inspirado
+  no modelo de "embedded evaluation" da Anthropic/Accenture: acesso amplo de
+  leitura, sem poder de decidir.
 
 ## Demonstração ao vivo
 

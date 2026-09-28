@@ -146,6 +146,36 @@ class PolicyDecision(Base):
     run: Mapped[Run] = relationship(back_populates="policy_decisions")
 
 
+class FindingSeverity(StrEnum):
+    INFO = "info"
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+class EvaluationFinding(Base):
+    """Um achado de um avaliador independente — papel separado de quem opera
+    e de quem aprova (inspirado no modelo de 'embedded evaluation' da
+    Anthropic/Accenture: acesso amplo de leitura, sem poder de bloquear,
+    só de registrar e tornar visível). Não é uma PolicyDecision (que trava
+    a execução) nem uma Approval (que decide uma chamada específica): pode
+    ser sobre um run isolado ou sobre um padrão observado no agente como um
+    todo, e nunca impede nada por si só."""
+
+    __tablename__ = "evaluation_findings"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    agent_id: Mapped[str] = mapped_column(String(120), index=True)
+    run_id: Mapped[str | None] = mapped_column(ForeignKey("runs.id"), nullable=True, index=True)
+    severity: Mapped[str] = mapped_column(String(20), default=FindingSeverity.INFO)
+    finding: Mapped[str] = mapped_column(Text)
+    reported_by: Mapped[str] = mapped_column(String(120))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+
+    run: Mapped[Run | None] = relationship()
+
+
 class BudgetLimit(Base):
     """Teto de gasto por tenant (+ opcionalmente por agente)."""
 

@@ -6,7 +6,12 @@ também a política correspondente em policy/policies/).
 Cada agente também carrega metadados de registro — dono, status, versão,
 descrição. Isso existe para responder uma pergunta organizacional, não
 técnica: "que agentes existem, quem é dono de cada um, e qual está ativo?"
-Sem isso, todo time acumula agentes que ninguém sabe quem publicou."""
+Sem isso, todo time acumula agentes que ninguém sabe quem publicou.
+
+`evaluators` é um papel separado de `owner`: o dono opera e aprova; o
+avaliador só observa e registra achados (ver `telemetry/findings.py`), sem
+poder de bloquear nada. É uma lista porque nenhum avaliador é exclusivo —
+o mesmo agente pode ter mais de um observador independente ao mesmo tempo."""
 
 from __future__ import annotations
 
@@ -33,6 +38,7 @@ class AgentDefinition:
     status: str = AgentStatus.DRAFT
     version: str = "1"
     description: str = ""
+    evaluators: list[str] = field(default_factory=list)
 
     @classmethod
     def from_dict(cls, agent_id: str, data: dict) -> AgentDefinition:
@@ -46,6 +52,7 @@ class AgentDefinition:
             status=data.get("status", AgentStatus.DRAFT),
             version=str(data.get("version", "1")),
             description=data.get("description", ""),
+            evaluators=data.get("evaluators", []),
         )
 
 

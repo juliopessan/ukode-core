@@ -33,10 +33,30 @@ class AgentOut(BaseModel):
     description: str
     model: str
     tool_names: list[str]
+    evaluators: list[str]
     total_runs: int
     last_run_at: str | None
     total_cost_usd: float
     tenants: list[str]
+
+
+class CreateFindingRequest(BaseModel):
+    finding: str
+    reported_by: str
+    severity: str = "info"
+    run_id: str | None = None
+
+
+class FindingOut(BaseModel):
+    id: str
+    agent_id: str
+    run_id: str | None
+    severity: str
+    finding: str
+    reported_by: str
+    created_at: str
+
+    model_config = {"from_attributes": True}
 
 
 class PolicyDecisionOut(BaseModel):
