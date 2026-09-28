@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>ukode-core — brag</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "Archivo"; font-weight: 800; src: url("assets/fonts/archivo-800.woff2") format("woff2"); }
+      @font-face { font-family: "Archivo"; font-weight: 700; src: url("assets/fonts/archivo-700.woff2") format("woff2"); }
+      @font-face { font-family: "Plex Mono"; font-weight: 400; src: url("assets/fonts/plexmono-400.woff2") format("woff2"); }
+      @font-face { font-family: "Plex Mono"; font-weight: 500; src: url("assets/fonts/plexmono-500.woff2") format("woff2"); }
+      @font-face { font-family: "Instrument Serif"; font-style: italic; font-weight: 400; src: url("assets/fonts/instrumentserif-italic.woff2") format("woff2"); }
+
+      :root {
+        /* Ledger tokens, copiados de site/assets/camadas.css */
+        --paper: #f2efe8; --paper-deep: #e7e3da; --rule: #d6d2c8;
+        --ink: #11110f; --ink-soft: #55524b; --ink-faint: #75726a;
+        --clay: #ed6738; --clay-deep: #c8481c; --clay-text: #b54119; --mint: #4f9c6b;
+        --ledger-bg: #14140f; --ledger-ink: #efece4; --ledger-dim: #a19d95; --ledger-rule: #2c2b25; --ledger-mint: #8fcfa6;
+        --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+        --mono: "Plex Mono", ui-monospace, Menlo, monospace;
+        --voice: "Instrument Serif", Georgia, serif;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--paper); }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--paper); color: var(--ink); font-family: var(--display); }
+
+      /* ---------- camada de fundo (persistente) ---------- */
+      #bg { position: absolute; inset: 0; }
+      .dots { position: absolute; inset: -60px; background-image: radial-gradient(circle, rgba(17,17,15,0.13) 1.5px, transparent 1.6px); background-size: 44px 44px; }
+      .rule-h { position: absolute; left: 96px; right: 96px; height: 2px; background: var(--rule); transform-origin: left center; }
+      .rule-top { top: 104px; }
+      .rule-bottom { bottom: 104px; }
+      .reg { position: absolute; width: 22px; height: 22px; }
+      .reg::before, .reg::after { content: ""; position: absolute; background: var(--ink-faint); }
+      .reg::before { left: 10px; top: 0; width: 2px; height: 22px; }
+      .reg::after { top: 10px; left: 0; height: 2px; width: 22px; }
+      .reg-tl { left: 60px; top: 60px; } .reg-tr { right: 60px; top: 60px; }
+      .reg-bl { left: 60px; bottom: 60px; } .reg-br { right: 60px; bottom: 60px; }
+
+      .meta { position: absolute; left: 96px; right: 96px; display: flex; justify-content: space-between; font-family: var(--mono); font-size: 22px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-soft); }
+      .meta-top { top: 58px; }
+      .meta-bottom { bottom: 58px; }
+      .meta b { color: var(--ink); font-weight: 500; }
+      #clock { font-variant-numeric: tabular-nums; }
+
+      /* ---------- cenas ---------- */
+      .scene { position: absolute; left: 96px; right: 96px; top: 150px; bottom: 150px; }
+      .wrap { position: absolute; inset: 0; }
+      .eyebrow { display: flex; align-items: center; gap: 18px; font-family: var(--mono); font-size: 24px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-soft); }
+      .eyebrow::before { content: ""; width: 56px; height: 2px; background: var(--ink-soft); }
+
+      /* console escuro (recriação de site/live.html) */
+      .console { background: var(--ledger-bg); color: var(--ledger-ink); font-family: var(--mono); padding: 34px 44px 40px; }
+      .console-head { display: flex; justify-content: space-between; font-size: 21px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ledger-dim); padding-bottom: 20px; border-bottom: 2px solid var(--ledger-rule); margin-bottom: 18px; }
+      .c-line { display: flex; gap: 26px; font-size: 29px; line-height: 64px; white-space: nowrap; }
+      .c-line .t { color: var(--ledger-dim); width: 150px; flex: none; font-variant-numeric: tabular-nums; }
+      .c-line .k { color: var(--ledger-dim); width: 190px; flex: none; }
+      .c-line .k.allow, .c-line .allow { color: var(--ledger-mint); }
+      .c-line .k.wait { color: var(--clay); }
+      .c-line b { color: var(--ledger-ink); font-weight: 500; }
+
+      /* Cena 1 */
+      #s1-head { font-size: 132px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; margin-top: 40px; }
+      #s1-console { position: absolute; left: 0; right: 180px; top: 330px; }
+      #s1-code { font-size: 44px; line-height: 1.4; color: var(--ledger-ink); white-space: nowrap; }
+      #s1-code .fn { color: var(--ledger-ink); font-weight: 500; }
+      #s1-code .str { color: var(--ledger-dim); }
+      #s1-code span.ch { opacity: 0; }
+      #s1-caret { display: inline-block; width: 22px; height: 46px; background: var(--ledger-ink); vertical-align: -6px; margin-left: 4px; }
+      .stamp { position: absolute; font-family: var(--mono); font-weight: 500; font-size: 40px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--clay-deep); border: 5px solid var(--clay-deep); padding: 16px 30px; background: var(--paper); white-space: nowrap; }
+      #s1-stamp { right: 110px; top: 515px; }
+
+      /* Cena 2 */
+      #s2-name { font-size: 250px; font-weight: 800; letter-spacing: -0.055em; line-height: 0.95; margin-top: 70px; }
+      #s2-rule { height: 4px; background: var(--ink); width: 100%; margin-top: 56px; transform-origin: left center; }
+      #s2-terms { display: flex; gap: 0; margin-top: 44px; font-family: var(--mono); font-size: 36px; font-weight: 500; color: var(--ink); }
+      #s2-terms span { flex: 1; text-wrap: balance; padding-right: 30px; border-left: 3px solid var(--ink); padding-left: 24px; }
+
+      /* Cena 3 */
+      #s3-left { position: absolute; left: 0; top: 0; width: 560px; }
+      #s3-head { font-size: 80px; font-weight: 800; letter-spacing: -0.035em; line-height: 1.02; margin-top: 30px; }
+      #s3-status { position: absolute; left: 0; top: 420px; width: 560px; height: 60px; font-family: var(--mono); font-size: 27px; color: var(--ink-soft); }
+      #s3-status .dot { position: absolute; left: 0; top: 18px; width: 20px; height: 20px; border-radius: 50%; }
+      #s3-status .dot-run { background: var(--clay); }
+      #s3-status .dot-done { background: var(--mint); }
+      #s3-status .lbl { position: absolute; left: 38px; top: 6px; white-space: nowrap; }
+      #s3-status .lbl b { color: var(--ink); font-weight: 500; }
+      #s3-console { position: absolute; left: 640px; right: 0; top: 0; }
+      #s3-approval { position: absolute; left: 640px; right: 0; top: 486px; border: 4px solid var(--clay-deep); background: #f6e3d9; padding: 26px 34px 30px; }
+      #s3-approval .k { font-family: var(--mono); font-size: 22px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--clay-text); }
+      #s3-approval p { font-size: 30px; line-height: 1.35; margin-top: 12px; color: var(--ink); }
+      #s3-approval p b { font-weight: 800; }
+      .actions { position: relative; display: flex; gap: 20px; margin-top: 22px; }
+      .btn { height: 76px; display: flex; align-items: center; justify-content: center; font-family: var(--display); font-weight: 700; font-size: 28px; }
+      .btn-deny { width: 180px; border: 3px solid var(--clay-deep); color: var(--clay-text); }
+      .btn-ok { width: 420px; background: var(--ink); color: var(--paper); border: 3px solid var(--ink); }
+      /* cursor: ponta posicionada no centro do botão Aprovar (180 + 20 + 210, 38) */
+      #cursor { position: absolute; left: 410px; top: 38px; width: 48px; height: 60px; }
+
+      /* Cena 4 */
+      #s4-left { position: absolute; left: 0; top: 0; width: 560px; }
+      #s4-head { font-size: 80px; font-weight: 800; letter-spacing: -0.035em; line-height: 1.02; margin-top: 30px; }
+      #s4-panel { position: absolute; left: 640px; right: 0; top: 0; background: var(--ledger-bg); color: var(--ledger-ink); padding: 30px 44px 26px; }
+      .p-head { display: flex; justify-content: space-between; align-items: center; font-family: var(--mono); font-size: 22px; letter-spacing: 0.14em; text-transform: uppercase; padding-bottom: 18px; border-bottom: 2px solid var(--ledger-rule); }
+      .p-head .live { display: flex; align-items: center; gap: 14px; }
+      .p-head .live::before { content: ""; width: 12px; height: 12px; border-radius: 50%; background: var(--ledger-mint); }
+      .p-head .cost { font-size: 30px; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+      .q-row { display: flex; justify-content: space-between; align-items: baseline; gap: 30px; height: 70px; border-bottom: 2px solid var(--ledger-rule); }
+      .q-row:last-child { border-bottom: 0; }
+      .q-row .q { font-size: 28px; color: var(--ledger-dim); white-space: nowrap; }
+      .q-row .a { font-family: var(--mono); font-size: 28px; white-space: nowrap; text-align: right; }
+      .q-row .a.ok { color: var(--ledger-mint); font-weight: 500; }
+      .q-row { padding-top: 20px; }
+
+      /* Cena 5 */
+      #s5-list { position: absolute; left: 0; top: 30px; }
+      .strike-line { position: relative; display: block; width: max-content; font-size: 66px; font-weight: 700; letter-spacing: -0.03em; color: var(--ink-soft); line-height: 1.3; }
+      .strike-line .bar { position: absolute; left: -6px; right: -6px; top: 54%; height: 7px; background: var(--ink); transform-origin: left center; }
+      #s5-right { position: absolute; left: 820px; right: 0; top: 60px; }
+      #s5-name { font-size: 140px; font-weight: 800; letter-spacing: -0.055em; line-height: 0.95; }
+      #s5-voice { font-family: var(--voice); font-style: italic; font-weight: 400; font-size: 96px; letter-spacing: -0.01em; line-height: 1.1; margin-top: 18px; }
+      #s5-foot { margin-top: 44px; font-family: var(--mono); font-size: 30px; color: var(--ink-soft); letter-spacing: 0.04em; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="23" data-width="1920" data-height="1080">
+
+      <!-- Camada persistente: pontos, réguas, marcas de registro, metadados -->
+      <div id="bg" class="clip" data-start="0" data-duration="23" data-track-index="0">
+        <div class="dots" id="dots"></div>
+        <div class="rule-h rule-top" id="rule-top"></div>
+        <div class="rule-h rule-bottom" id="rule-bottom"></div>
+        <div class="reg reg-tl"></div><div class="reg reg-tr"></div>
+        <div class="reg reg-bl"></div><div class="reg reg-br"></div>
+        <div class="meta meta-top" id="meta-top"><span><b>UKode Labs</b> · ukode-core</span><span>orquestração de agentes</span></div>
+        <div class="meta meta-bottom" id="meta-bottom"><span>política · aprovação · custo · auditoria</span><span id="clock">00:00.0</span></div>
+      </div>
+
+      <!-- Cena 1: hook -->
+      <section id="s1" class="scene clip" data-start="0" data-duration="3.6" data-track-index="1">
+        <div class="wrap" id="s1-wrap">
+          <p class="eyebrow" id="s1-eyebrow">Execução ao vivo</p>
+          <h1 id="s1-head">Seu agente quer agir.</h1>
+          <div class="console" id="s1-console">
+            <div class="console-head"><span>run · demo_agent</span><span>chamada de ferramenta</span></div>
+            <div id="s1-code"></div>
+          </div>
+          <div class="stamp" id="s1-stamp">Precisa de aprovação</div>
+        </div>
+      </section>
+
+      <!-- Cena 2: revelação -->
+      <section id="s2" class="scene clip" data-start="3.5" data-duration="3.6" data-track-index="2">
+        <div class="wrap" id="s2-wrap">
+          <p class="eyebrow" id="s2-eyebrow">Camada de orquestração de agentes</p>
+          <h1 id="s2-name">ukode-core</h1>
+          <div id="s2-rule"></div>
+          <div id="s2-terms">
+            <span id="t1">política antes da ação</span>
+            <span id="t2">aprovação humana</span>
+            <span id="t3">custo por execução</span>
+            <span id="t4">auditoria encadeada</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Cena 3: o fluxo ao vivo (site/live.html) -->
+      <section id="s3" class="scene clip" data-start="7.0" data-duration="7.3" data-track-index="3">
+        <div class="wrap" id="s3-wrap">
+          <div id="s3-left">
+            <p class="eyebrow">Como funciona</p>
+            <h2 id="s3-head">Toda ação passa pela política.</h2>
+          </div>
+          <div id="s3-status" data-layout-allow-overlap>
+            <span class="dot dot-run" id="dot-run"></span>
+            <span class="dot dot-done" id="dot-done"></span>
+            <span class="lbl" id="lbl-run">processando…</span>
+            <span class="lbl" id="lbl-wait"><b>aguardando aprovação humana</b></span>
+            <span class="lbl" id="lbl-done"><b>concluído</b></span>
+          </div>
+          <div class="console" id="s3-console">
+            <div class="console-head"><span>run · demo_agent</span><span>beca3f65</span></div>
+            <div class="c-line" id="l1"><span class="k">pedido</span><span>"Confirme a sessão do lead"</span></div>
+            <div class="c-line" id="l2"><span class="k allow">política</span><span><b>lookup_contact</b> — permitido</span></div>
+            <div class="c-line" id="l3"><span class="k wait">política</span><span><b>send_whatsapp_message</b> — precisa de aprovação</span></div>
+            <div class="c-line" id="l4"><span class="k">humano</span><span>aprovou — ops</span></div>
+            <div class="c-line" id="l5"><span class="k allow">concluído</span><span>2 recursos · $0.013743</span></div>
+          </div>
+          <div id="s3-approval">
+            <span class="k">Aprovação pendente</span>
+            <p><b>send_whatsapp_message</b> — Envio de WhatsApp para um cliente real exige aprovação humana.</p>
+            <div class="actions">
+              <div class="btn btn-deny">Negar</div>
+              <div class="btn btn-ok" id="btn-ok">Aprovar como ops</div>
+              <svg id="cursor" viewBox="0 0 48 60" aria-hidden="true">
+                <path d="M2 2 L2 48 L14 37 L22 56 L31 52 L23 34 L40 34 Z" fill="#11110f" stroke="#f2efe8" stroke-width="3" stroke-linejoin="round" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Cena 4: o recibo -->
+      <section id="s4" class="scene clip" data-start="14.2" data-duration="5.1" data-track-index="4">
+        <div class="wrap" id="s4-wrap">
+          <div id="s4-left">
+            <p class="eyebrow">O recibo</p>
+            <h2 id="s4-head">Oito perguntas. Qualquer execução.</h2>
+          </div>
+          <div id="s4-panel">
+            <div class="p-head"><span class="live">replay · 8 perguntas</span><span class="cost">$0.013743</span></div>
+            <div class="q-row" id="q1"><span class="q">Qual agente executou?</span><span class="a">demo_agent</span></div>
+            <div class="q-row" id="q2"><span class="q">Quem é o dono?</span><span class="a">ops</span></div>
+            <div class="q-row" id="q3"><span class="q">Qual versão?</span><span class="a">1</span></div>
+            <div class="q-row" id="q4"><span class="q">Qual modelo?</span><span class="a">claude-sonnet-5</span></div>
+            <div class="q-row" id="q5"><span class="q">Políticas aplicadas?</span><span class="a">2 decisões</span></div>
+            <div class="q-row" id="q6"><span class="q">Recursos acessados?</span><span class="a">lookup_contact, send_whatsapp_message</span></div>
+            <div class="q-row" id="q7"><span class="q">Quanto custou?</span><span class="a">$0.013743</span></div>
+            <div class="q-row" id="q8"><span class="q">Auditoria íntegra?</span><span class="a ok">sim, verificada</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Cena 5: punchline -->
+      <section id="s5" class="scene clip" data-start="19.2" data-duration="3.8" data-track-index="5">
+        <div class="wrap" id="s5-wrap">
+          <div id="s5-list">
+            <p class="eyebrow" style="margin-bottom: 26px">Sem</p>
+            <span class="strike-line" id="k1">n8n<span class="bar" id="b1"></span></span>
+            <span class="strike-line" id="k2">LangChain<span class="bar" id="b2"></span></span>
+            <span class="strike-line" id="k3">framework de agente<span class="bar" id="b3"></span></span>
+          </div>
+          <div id="s5-right">
+            <h1 id="s5-name">ukode-core</h1>
+            <p id="s5-voice">o humano decide.</p>
+            <p id="s5-foot">Python puro · 29 testes · no ar</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Áudio -->
+      <audio id="music" data-start="0" data-duration="23" data-volume="1" data-track-index="10"
+        src="assets/music/happy-beats-business-moves-vol-11-by-ende-dot-app.mp3"
+        data-automation='{"version":1,"lanes":[{"target":"volume","points":[{"t":0,"v":0},{"t":0.8,"v":0.42},{"t":21.4,"v":0.42},{"t":23,"v":0}]}]}'></audio>
+
+      <audio id="kp1" data-start="0.62" data-duration="0.12" data-volume="0.22" data-track-index="11" src="assets/sfx/keyboard/keypress-003.wav"></audio>
+      <audio id="kp2" data-start="0.74" data-duration="0.12" data-volume="0.2" data-track-index="12" src="assets/sfx/keyboard/keypress-007.wav"></audio>
+      <audio id="kp3" data-start="0.86" data-duration="0.12" data-volume="0.22" data-track-index="11" src="assets/sfx/keyboard/keypress-011.wav"></audio>
+      <audio id="kp4" data-start="0.98" data-duration="0.12" data-volume="0.2" data-track-index="12" src="assets/sfx/keyboard/keypress-015.wav"></audio>
+      <audio id="kp5" data-start="1.10" data-duration="0.12" data-volume="0.22" data-track-index="11" src="assets/sfx/keyboard/keypress-019.wav"></audio>
+      <audio id="kp6" data-start="1.22" data-duration="0.12" data-volume="0.2" data-track-index="12" src="assets/sfx/keyboard/keypress-023.wav"></audio>
+      <audio id="kp7" data-start="1.34" data-duration="0.12" data-volume="0.22" data-track-index="11" src="assets/sfx/keyboard/keypress-027.wav"></audio>
+      <audio id="kp8" data-start="1.46" data-duration="0.12" data-volume="0.2" data-track-index="12" src="assets/sfx/keyboard/keypress-031.wav"></audio>
+      <!-- beat-locked: carimbo em 1.60s -->
+      <audio id="sfx-stamp" data-start="1.60" data-duration="0.19" data-volume="0.55" data-track-index="13" src="assets/sfx/impact/impactSoft_medium_001.ogg"></audio>
+      <audio id="sfx-name" data-start="3.70" data-duration="0.15" data-volume="0.35" data-track-index="13" src="assets/sfx/impact/impactSoft_medium_004.ogg"></audio>
+      <audio id="tick1" data-start="7.38" data-duration="0.01" data-volume="0.18" data-track-index="14" src="assets/sfx/interface/click_002.ogg"></audio>
+      <audio id="tick2" data-start="8.44" data-duration="0.01" data-volume="0.18" data-track-index="14" src="assets/sfx/interface/click_002.ogg"></audio>
+      <audio id="tick3" data-start="9.50" data-duration="0.01" data-volume="0.2" data-track-index="14" src="assets/sfx/interface/click_002.ogg"></audio>
+      <!-- beat-locked: clique no Aprovar em 12.65s -->
+      <audio id="sfx-click" data-start="12.65" data-duration="0.01" data-volume="0.5" data-track-index="15" src="assets/sfx/interface/click_003.ogg"></audio>
+      <audio id="tick4" data-start="13.18" data-duration="0.01" data-volume="0.18" data-track-index="14" src="assets/sfx/interface/click_002.ogg"></audio>
+      <!-- beat-locked: "sim, verificada" em 17.91s -->
+      <audio id="sfx-verified" data-start="17.91" data-duration="0.13" data-volume="0.3" data-track-index="13" src="assets/sfx/interface/bong_001.ogg"></audio>
+    </div>
+
+    <script>
+      // Digitação da chamada: um span por caractere, montado de forma síncrona.
+      (function buildCode() {
+        const parts = [
+          { text: "send_whatsapp_message", cls: "fn" },
+          { text: "(to: ", cls: "" },
+          { text: "\"+55 11 9····\"", cls: "str" },
+          { text: ")", cls: "" },
+        ];
+        const code = document.getElementById("s1-code");
+        parts.forEach((p) => {
+          const wrap = document.createElement("span");
+          if (p.cls) wrap.className = p.cls;
+          for (const ch of p.text) {
+            const s = document.createElement("span");
+            s.className = "ch";
+            s.textContent = ch;
+            wrap.appendChild(s);
+          }
+          code.appendChild(wrap);
+        });
+        const caret = document.createElement("span");
+        caret.id = "s1-caret";
+        code.appendChild(caret);
+      })();
+
+      const tl = gsap.timeline({ paused: true });
+      const E = "power3.out";
+
+      // ---------- fundo persistente ----------
+      tl.fromTo("#dots", { x: 0, y: 0 }, { x: -44, y: -22, duration: 23, ease: "none" }, 0);
+      tl.fromTo(["#rule-top", "#rule-bottom"], { scaleX: 0 }, { scaleX: 1, duration: 1.0, ease: "power2.inOut" }, 0);
+      tl.fromTo(["#meta-top", "#meta-bottom"], { opacity: 0 }, { opacity: 1, duration: 0.6 }, 0.1);
+      const clock = { t: 0 };
+      tl.to(clock, {
+        t: 23, duration: 23, ease: "none",
+        onUpdate: () => {
+          const s = clock.t;
+          const mm = String(Math.floor(s / 60)).padStart(2, "0");
+          const ss = (s % 60).toFixed(1).padStart(4, "0");
+          document.getElementById("clock").textContent = `${mm}:${ss}`;
+        },
+      }, 0);
+
+      // ---------- Cena 1 ----------
+      tl.fromTo("#s1-eyebrow", { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.5, ease: E }, 0.1);
+      tl.fromTo("#s1-head", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.6, ease: E }, 0.15);
+      tl.fromTo("#s1-console", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: E }, 0.35);
+      tl.fromTo("#s1-code span.ch", { opacity: 0 }, { opacity: 1, duration: 0.01, stagger: 0.9 / 41 }, 0.6);
+      tl.fromTo("#s1-caret", { opacity: 1 }, { opacity: 0, duration: 0.01, repeat: 5, yoyo: true, repeatDelay: 0.28 }, 1.55);
+      // beat-locked: 1.60s
+      tl.fromTo("#s1-stamp", { opacity: 0, scale: 1.7, rotation: -6 }, { opacity: 1, scale: 1, rotation: -6, duration: 0.42, ease: "back.out(2.2)" }, 1.52);
+      tl.to("#s1-wrap", { opacity: 0, y: -24, duration: 0.3, ease: "power2.in" }, 3.3);
+
+      // ---------- Cena 2 ----------
+      tl.fromTo("#s2-eyebrow", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 3.55);
+      // beat-grid: nome em 3.70s
+      tl.fromTo("#s2-name", { opacity: 0, y: 70 }, { opacity: 1, y: 0, duration: 0.55, ease: "expo.out" }, 3.6);
+      tl.fromTo("#s2-rule", { scaleX: 0 }, { scaleX: 1, duration: 0.7, ease: "power2.inOut" }, 3.9);
+      // beat-grid: termos em 4.23, 4.75, 5.28, 5.80
+      ["#t1", "#t2", "#t3", "#t4"].forEach((id, i) => {
+        tl.fromTo(id, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.4, ease: E }, [4.23, 4.75, 5.28, 5.8][i] - 0.08);
+      });
+      tl.to("#s2-wrap", { opacity: 0, duration: 0.3, ease: "power2.in" }, 6.8);
+
+      // ---------- Cena 3 ----------
+      tl.fromTo("#s3-left", { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.5, ease: E }, 7.05);
+      tl.fromTo("#s3-console", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.55, ease: "expo.out" }, 7.1);
+      tl.set(["#l1", "#l2", "#l3", "#l4", "#l5"], { opacity: 0 }, 7.0);
+      tl.set(["#dot-done", "#lbl-wait", "#lbl-done"], { opacity: 0 }, 7.0);
+      tl.fromTo(["#dot-run", "#lbl-run"], { opacity: 0 }, { opacity: 1, duration: 0.3 }, 7.2);
+      // beat-grid: linhas em 7.38, 8.44, 9.50 (uma batida sim, uma não, para dar tempo de ler)
+      tl.fromTo("#l1", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.35, ease: E }, 7.38);
+      tl.fromTo("#l2", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.35, ease: E }, 8.44);
+      tl.fromTo("#l3", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.35, ease: E }, 9.5);
+      tl.to("#lbl-run", { opacity: 0, duration: 0.2 }, 9.5);
+      tl.fromTo("#lbl-wait", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 9.6);
+      tl.fromTo("#dot-run", { scale: 1 }, { scale: 1.45, duration: 0.45, repeat: 5, yoyo: true, ease: "sine.inOut" }, 9.5);
+      // caixa de aprovação na batida 10.01
+      tl.fromTo("#s3-approval", { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.5, ease: "expo.out" }, 9.95);
+      tl.fromTo("#cursor", { opacity: 0, x: 380, y: 170 }, { opacity: 1, x: 380, y: 170, duration: 0.2 }, 10.9);
+      tl.to("#cursor", { x: 0, y: 0, duration: 1.35, ease: "power2.inOut" }, 11.1);
+      // beat-locked: clique em 12.65s
+      tl.to("#cursor", { scale: 0.82, duration: 0.08, yoyo: true, repeat: 1, transformOrigin: "0% 0%" }, 12.62);
+      tl.to("#btn-ok", { backgroundColor: "#55524b", duration: 0.08, yoyo: true, repeat: 1 }, 12.62);
+      tl.to("#s3-approval", { opacity: 0, y: 20, duration: 0.3, ease: "power2.in" }, 12.9);
+      tl.fromTo("#l4", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.35, ease: E }, 12.9);
+      tl.fromTo("#l5", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.35, ease: E }, 13.18);
+      tl.to(["#lbl-wait", "#dot-run"], { opacity: 0, duration: 0.2 }, 13.18);
+      tl.fromTo(["#lbl-done", "#dot-done"], { opacity: 0 }, { opacity: 1, duration: 0.3 }, 13.2);
+      tl.to("#s3-wrap", { opacity: 0, duration: 0.3, ease: "power2.in" }, 13.95);
+
+      // ---------- Cena 4 ----------
+      tl.fromTo("#s4-left", { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.5, ease: E }, 14.25);
+      tl.fromTo("#s4-panel", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.55, ease: "expo.out" }, 14.3);
+      // beat-grid: linhas do replay em 14.76 … 17.38, depois 17.64
+      const qTimes = [14.76, 15.28, 15.81, 16.34, 16.86, 17.38, 17.64];
+      qTimes.forEach((t, i) => {
+        tl.fromTo(`#q${i + 1}`, { opacity: 0, x: 24 }, { opacity: 1, x: 0, duration: 0.3, ease: E }, t - 0.05);
+      });
+      // beat-locked: "sim, verificada" em 17.91s
+      tl.fromTo("#q8", { opacity: 0, x: 24 }, { opacity: 1, x: 0, duration: 0.3, ease: E }, 17.86);
+      tl.to("#s4-wrap", { opacity: 0, duration: 0.3, ease: "power2.in" }, 18.95);
+
+      // ---------- Cena 5 ----------
+      tl.fromTo("#s5-list .eyebrow", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 19.3);
+      // beat-grid: 19.49, 20.02, 20.54
+      [["#k1", "#b1", 19.49], ["#k2", "#b2", 20.02], ["#k3", "#b3", 20.54]].forEach(([k, b, t]) => {
+        tl.fromTo(k, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.3, ease: E }, t - 0.05);
+        tl.fromTo(b, { scaleX: 0 }, { scaleX: 1, duration: 0.3, ease: "power2.inOut" }, t + 0.3);
+      });
+      tl.fromTo("#s5-name", { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 0.55, ease: "expo.out" }, 21.02);
+      tl.fromTo("#s5-voice", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: E }, 21.35);
+      tl.fromTo("#s5-foot", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 21.6);
+
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>
